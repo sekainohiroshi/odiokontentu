@@ -59,9 +59,26 @@ export function AudioPlayer({
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    const onTime = () => setCurrentTime(audio.currentTime);
-    const onMeta = () => setDuration(audio.duration);
+
+    const log = (ev: string, extra = '') =>
+      console.log(`[Player] ${ev} | ct=${audio.currentTime.toFixed(2)} dur=${audio.duration} ready=${audio.readyState} paused=${audio.paused}${extra ? ' | ' + extra : ''}`);
+
+    const onTime = () => {
+      setCurrentTime(audio.currentTime);
+      // duration が遅れて確定するケースに対応
+      if (audio.duration && !isNaN(audio.duration)) setDuration(audio.duration);
+    };
+    const onMeta = () => {
+      log('loadedmetadata');
+      setDuration(isNaN(audio.duration) ? 0 : audio.duration);
+    };
+    const onDurationChange = () => {
+      log('durationchange');
+      if (audio.duration && !isNaN(audio.duration)) setDuration(audio.duration);
+    };
+    const onCanPlay = () => log('canplay');
     const onEnded = () => {
+      log('ended');
       if (repeatModeRef.current === 'one') {
         audio.currentTime = 0;
         audio.play();
@@ -70,12 +87,19 @@ export function AudioPlayer({
         handleNext();
       }
     };
-    const onPlay  = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
-    const onError = () => setError('再生に失敗しました');
+    const onPlay  = () => { log('play');  setIsPlaying(true); };
+    const onPause = () => { log('pause'); setIsPlaying(false); };
+    const onError = () => {
+      const code = audio.error?.code;
+      const msg  = audio.error?.message ?? '';
+      log('error', `code=${code} msg=${msg}`);
+      setError(`再生に失敗しました (${code})`);
+    };
 
     audio.addEventListener('timeupdate', onTime);
     audio.addEventListener('loadedmetadata', onMeta);
+    audio.addEventListener('durationchange', onDurationChange);
+    audio.addEventListener('canplay', onCanPlay);
     audio.addEventListener('ended', onEnded);
     audio.addEventListener('play', onPlay);
     audio.addEventListener('pause', onPause);
@@ -83,6 +107,8 @@ export function AudioPlayer({
     return () => {
       audio.removeEventListener('timeupdate', onTime);
       audio.removeEventListener('loadedmetadata', onMeta);
+      audio.removeEventListener('durationchange', onDurationChange);
+      audio.removeEventListener('canplay', onCanPlay);
       audio.removeEventListener('ended', onEnded);
       audio.removeEventListener('play', onPlay);
       audio.removeEventListener('pause', onPause);
@@ -308,6 +334,11 @@ export function AudioPlayer({
           />
         </div>
       </div>
+
+      {/* デバッグ情報（コンソールにも出力） */}
+      <p className="text-slate-600 text-[10px] text-center mt-1 font-mono">
+        [DBG] ct={currentTime.toFixed(1)}s dur={duration.toFixed(1)}s playing={isPlaying ? 'Y' : 'N'} ready={audioRef.current?.readyState ?? '?'}
+      </p>
 
       {/* キーボードショートカットヒント（デスクトップのみ） */}
       <p className="text-slate-700 text-[10px] text-center hidden sm:block">
