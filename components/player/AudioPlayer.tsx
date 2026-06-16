@@ -145,8 +145,6 @@ export function AudioPlayer({
     return () => window.removeEventListener('keydown', handler);
   }, [track, volume]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!track) return null;
-
   const togglePlay = () => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -190,160 +188,159 @@ export function AudioPlayer({
   const volumeIcon = effectiveVolume === 0 ? '🔇' : effectiveVolume < 0.4 ? '🔈' : effectiveVolume < 0.8 ? '🔉' : '🔊';
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-slate-950/97 backdrop-blur-md border-t border-slate-800 px-4 pt-3 safe-area-bottom z-20">
-      <audio ref={audioRef} />
+    <>
+      {/* audio は常に DOM に存在させて ref・event listeners を維持 */}
+      <audio ref={audioRef} className="hidden" />
 
-      {/* タイトル */}
-      <p className="text-white text-sm font-semibold mb-2 truncate leading-tight">
-        {error ? `⚠️ ${error}` : track.title}
-      </p>
+      {track && (
+        <div className="fixed bottom-0 left-0 right-0 bg-slate-950/97 backdrop-blur-md border-t border-slate-800 px-4 pt-3 safe-area-bottom z-20">
 
-      {/* シークバー */}
-      <div
-        className="relative h-1.5 bg-slate-700 rounded-full mb-1 cursor-pointer group"
-        onClick={handleSeek}
-      >
-        <div
-          className="absolute inset-y-0 left-0 bg-blue-500 rounded-full transition-[width] duration-100"
-          style={{ width: `${progress}%` }}
-        />
-        <div
-          className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-          style={{ left: `calc(${progress}% - 7px)` }}
-        />
-      </div>
-      <div className="flex justify-between text-xs text-slate-500 mb-2">
-        <span>{formatTime(currentTime)}</span>
-        <span>{formatTime(duration)}</span>
-      </div>
+          {/* タイトル */}
+          <p className="text-white text-sm font-semibold mb-2 truncate leading-tight">
+            {error ? `⚠️ ${error}` : track.title}
+          </p>
 
-      {/* メインコントロール */}
-      <div className="flex items-center justify-between mb-2.5 px-1">
-        {/* シャッフル */}
-        <button
-          onClick={onShuffleToggle}
-          title="シャッフル"
-          className={`p-2 rounded-lg transition-colors text-lg ${
-            isShuffled ? 'text-blue-400' : 'text-slate-600 hover:text-slate-400'
-          }`}
-        >
-          🔀
-        </button>
+          {/* シークバー */}
+          <div
+            className="relative h-1.5 bg-slate-700 rounded-full mb-1 cursor-pointer group"
+            onClick={handleSeek}
+          >
+            <div
+              className="absolute inset-y-0 left-0 bg-blue-500 rounded-full transition-[width] duration-100"
+              style={{ width: `${progress}%` }}
+            />
+            <div
+              className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+              style={{ left: `calc(${progress}% - 7px)` }}
+            />
+          </div>
+          <div className="flex justify-between text-xs text-slate-500 mb-2">
+            <span>{formatTime(currentTime)}</span>
+            <span>{formatTime(duration)}</span>
+          </div>
 
-        <button
-          onClick={onPrev}
-          disabled={!hasPrev}
-          className="text-slate-400 disabled:opacity-25 p-2 hover:text-white transition-colors"
-        >
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/>
-          </svg>
-        </button>
-
-        {/* -15s */}
-        <button onClick={() => skip(-15)} className="text-slate-400 hover:text-white transition-colors relative">
-          <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
-          </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold mt-0.5">15</span>
-        </button>
-
-        {/* 再生/一時停止 */}
-        <button
-          onClick={togglePlay}
-          className="w-14 h-14 bg-blue-500 hover:bg-blue-400 active:scale-95 rounded-full text-white flex items-center justify-center transition-all shadow-lg shadow-blue-500/30"
-        >
-          {isPlaying ? (
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-            </svg>
-          ) : (
-            <svg className="w-6 h-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z"/>
-            </svg>
-          )}
-        </button>
-
-        {/* +15s */}
-        <button onClick={() => skip(15)} className="text-slate-400 hover:text-white transition-colors relative">
-          <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
-          </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold mt-0.5">15</span>
-        </button>
-
-        <button
-          onClick={onNext}
-          disabled={!hasNext}
-          className="text-slate-400 disabled:opacity-25 p-2 hover:text-white transition-colors"
-        >
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M6 18l8.5-6L6 6v12zm2-8.14 4.77 2.14L8 14.14V9.86zM16 6h2v12h-2z"/>
-          </svg>
-        </button>
-
-        {/* リピート */}
-        <button
-          onClick={() => onRepeatChange(REPEAT_NEXT[repeatMode])}
-          title={repeatMode === 'none' ? 'リピートなし' : repeatMode === 'all' ? '全曲リピート' : '1曲リピート'}
-          className={`p-2 rounded-lg transition-colors text-lg ${
-            repeatMode !== 'none' ? 'text-blue-400' : 'text-slate-600 hover:text-slate-400'
-          }`}
-        >
-          {REPEAT_LABEL[repeatMode]}
-        </button>
-      </div>
-
-      {/* 速度 + 音量 */}
-      <div className="flex items-center gap-3 mb-1">
-        {/* 速度ボタン */}
-        <div className="flex gap-1.5">
-          {SPEEDS.map((s) => (
+          {/* メインコントロール */}
+          <div className="flex items-center justify-between mb-2.5 px-1">
             <button
-              key={s}
-              onClick={() => setPlaybackRate(s)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
-                speed === s ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+              onClick={onShuffleToggle}
+              title="シャッフル"
+              className={`p-2 rounded-lg transition-colors text-lg ${
+                isShuffled ? 'text-blue-400' : 'text-slate-600 hover:text-slate-400'
               }`}
             >
-              {s}x
+              🔀
             </button>
-          ))}
+
+            <button
+              onClick={onPrev}
+              disabled={!hasPrev}
+              className="text-slate-400 disabled:opacity-25 p-2 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/>
+              </svg>
+            </button>
+
+            <button onClick={() => skip(-15)} className="text-slate-400 hover:text-white transition-colors relative">
+              <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+              </svg>
+              <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold mt-0.5">15</span>
+            </button>
+
+            <button
+              onClick={togglePlay}
+              className="w-14 h-14 bg-blue-500 hover:bg-blue-400 active:scale-95 rounded-full text-white flex items-center justify-center transition-all shadow-lg shadow-blue-500/30"
+            >
+              {isPlaying ? (
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                </svg>
+              ) : (
+                <svg className="w-6 h-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              )}
+            </button>
+
+            <button onClick={() => skip(15)} className="text-slate-400 hover:text-white transition-colors relative">
+              <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
+              </svg>
+              <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold mt-0.5">15</span>
+            </button>
+
+            <button
+              onClick={onNext}
+              disabled={!hasNext}
+              className="text-slate-400 disabled:opacity-25 p-2 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M6 18l8.5-6L6 6v12zm2-8.14 4.77 2.14L8 14.14V9.86zM16 6h2v12h-2z"/>
+              </svg>
+            </button>
+
+            <button
+              onClick={() => onRepeatChange(REPEAT_NEXT[repeatMode])}
+              title={repeatMode === 'none' ? 'リピートなし' : repeatMode === 'all' ? '全曲リピート' : '1曲リピート'}
+              className={`p-2 rounded-lg transition-colors text-lg ${
+                repeatMode !== 'none' ? 'text-blue-400' : 'text-slate-600 hover:text-slate-400'
+              }`}
+            >
+              {REPEAT_LABEL[repeatMode]}
+            </button>
+          </div>
+
+          {/* 速度 + 音量 */}
+          <div className="flex items-center gap-3 mb-1">
+            <div className="flex gap-1.5">
+              {SPEEDS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setPlaybackRate(s)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
+                    speed === s ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                  }`}
+                >
+                  {s}x
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <button
+                onClick={toggleMute}
+                title={isMuted ? 'ミュート解除' : 'ミュート'}
+                className="text-slate-400 hover:text-white transition-colors text-base flex-shrink-0"
+              >
+                {volumeIcon}
+              </button>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={effectiveVolume}
+                onChange={(e) => changeVolume(parseFloat(e.target.value))}
+                className="flex-1 h-1.5 appearance-none rounded-full cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, #3b82f6 ${effectiveVolume * 100}%, #334155 ${effectiveVolume * 100}%)`,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* デバッグ情報 */}
+          <p className="text-slate-600 text-[10px] text-center mt-1 font-mono">
+            [DBG] ct={currentTime.toFixed(1)}s dur={duration.toFixed(1)}s playing={isPlaying ? 'Y' : 'N'} ready={audioRef.current?.readyState ?? '?'}
+          </p>
+
+          {/* キーボードショートカット（デスクトップのみ） */}
+          <p className="text-slate-700 text-[10px] text-center hidden sm:block">
+            Space: 再生/停止 · ← →: ±15秒 · ↑↓: 音量 · M: ミュート
+          </p>
         </div>
-
-        {/* 音量 */}
-        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          <button
-            onClick={toggleMute}
-            title={isMuted ? 'ミュート解除' : 'ミュート'}
-            className="text-slate-400 hover:text-white transition-colors text-base flex-shrink-0"
-          >
-            {volumeIcon}
-          </button>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={effectiveVolume}
-            onChange={(e) => changeVolume(parseFloat(e.target.value))}
-            className="flex-1 h-1.5 appearance-none rounded-full cursor-pointer"
-            style={{
-              background: `linear-gradient(to right, #3b82f6 ${effectiveVolume * 100}%, #334155 ${effectiveVolume * 100}%)`,
-            }}
-          />
-        </div>
-      </div>
-
-      {/* デバッグ情報（コンソールにも出力） */}
-      <p className="text-slate-600 text-[10px] text-center mt-1 font-mono">
-        [DBG] ct={currentTime.toFixed(1)}s dur={duration.toFixed(1)}s playing={isPlaying ? 'Y' : 'N'} ready={audioRef.current?.readyState ?? '?'}
-      </p>
-
-      {/* キーボードショートカットヒント（デスクトップのみ） */}
-      <p className="text-slate-700 text-[10px] text-center hidden sm:block">
-        Space: 再生/停止 · ← →: ±15秒 · ↑↓: 音量 · M: ミュート
-      </p>
-    </div>
+      )}
+    </>
   );
 }
